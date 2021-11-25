@@ -66,6 +66,11 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     episode_reward = np.zeros(env.num_agents)
     finished_episode = [False] * env.num_agents
 
+    # print(cfg.env)
+    if env.num_agents == 1:
+        print("ONE1111111111111111111111111111111111111111111111111111111111111\n\n\n")
+    # cfg.env.render()
+
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
             obs_torch = AttrDict(transform_dict_observations(obs))
@@ -82,6 +87,9 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             rnn_states = policy_outputs.rnn_states
 
             obs, rew, done, infos = env.step(actions)
+            
+            # render the game
+            env.render()
 
             episode_reward += rew
             num_frames += 1
