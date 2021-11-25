@@ -21,8 +21,12 @@ from sample_factory.utils.utils import log, AttrDict
 import models as my_models
 import env as my_envs
 
+# Benji's log file/class
+from log import ActionLog
+
 
 TARGET_NUM_EPISODES = 512
+# TARGET_NUM_EPISODES = 1
 
 def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     """
@@ -66,10 +70,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     episode_reward = np.zeros(env.num_agents)
     finished_episode = [False] * env.num_agents
 
-    # print(cfg.env)
-    if env.num_agents == 1:
-        print("ONE1111111111111111111111111111111111111111111111111111111111111\n\n\n")
-    # cfg.env.render()
+    # create instance of log to keep track of agent actions
+    action_log = ActionLog()
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -82,6 +84,9 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             # sample actions from the distribution by default
             actions = policy_outputs.actions
 
+            # log worker action
+            action_log.record_action(actions.item())
+
             actions = actions.cpu().numpy()
 
             rnn_states = policy_outputs.rnn_states
@@ -89,6 +94,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             obs, rew, done, infos = env.step(actions)
             
             # render the game
+            # if env.num_agents == 1:   # I don't know if this is needed
+            #     env.render()
             env.render()
 
             episode_reward += rew
@@ -96,6 +103,11 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
             for agent_i, done_flag in enumerate(done):
                 if done_flag:
+                    # print actions after episode
+                    action_log.print_actions()
+                    # clear actions for next episode
+                    action_log.clear_actions()
+                    
                     finished_episode[agent_i] = True
                     episode_rewards[agent_i].append(episode_reward[agent_i])
                     true_rewards[agent_i].append(infos[agent_i].get('true_reward', episode_reward[agent_i]))
