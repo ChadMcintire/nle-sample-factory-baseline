@@ -128,4 +128,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-train_dir/
+*train_dir/
