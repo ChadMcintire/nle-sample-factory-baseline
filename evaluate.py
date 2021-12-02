@@ -2,7 +2,7 @@ import os
 import sys
 import time
 from collections import deque
-
+from utils import graphs
 import numpy as np
 import torch
 
@@ -25,8 +25,8 @@ import env as my_envs
 from log import ActionLog
 
 
-TARGET_NUM_EPISODES = 512
-# TARGET_NUM_EPISODES = 1
+# TARGET_NUM_EPISODES = 512
+TARGET_NUM_EPISODES = 1
 
 def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     """
@@ -65,13 +65,17 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     num_frames = 0
     num_episodes = 0
 
-    obs = env.reset()
+    origin_obs = env.reset()
     rnn_states = torch.zeros([env.num_agents, get_hidden_size(cfg)], dtype=torch.float32, device=device)
     episode_reward = np.zeros(env.num_agents)
     finished_episode = [False] * env.num_agents
 
     # create instance of log to keep track of agent actions
     action_log = ActionLog()
+
+    # create graph directory and builder for heatmap
+    g_type = "heat_pos"
+    builder = GraphBuilder([g_type])
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -92,7 +96,11 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             rnn_states = policy_outputs.rnn_states
 
             obs, rew, done, infos = env.step(actions)
-            
+
+            # add positions to heatmap
+            x, y, *other = origin_obs["blstats"][:2]
+            builder.append_point(g_type, (x, y))
+
             # render the game
             # if env.num_agents == 1:   # I don't know if this is needed
             #     env.render()
@@ -135,6 +143,12 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 log.info('Avg episode reward: %.3f, avg true_reward: %.3f', np.mean([np.mean(episode_rewards[i]) for i in range(env.num_agents)]), np.mean([np.mean(true_rewards[i]) for i in range(env.num_agents)]))
 
     env.close()
+
+    # generate heat maps and save to {WorkingDir}/graphs/{g_type}
+    loc = os.getcwd + "/graphs/"
+    if not os.path.exists(loc):
+        os.makedirs(loc)
+    builder.save_graphs(loc)
 
     return ExperimentStatus.SUCCESS, np.mean(episode_rewards)
 
