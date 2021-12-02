@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
 
 
 class GraphBuilder:
@@ -114,7 +115,10 @@ class GraphBuilder:
         return out_data
 
     def save_graphs(self, loc=""):
+        e = datetime.datetime.now()
+        time_prefix = "%s-%s-%s_%s_%s_%s" % (e.day, e.month, e.year, e.hour, e.minute, e.second)
         for key in self.graphs_data:
+            fname = time_prefix + key
             data = self._prep_data(key, transpose=True)
-            path = loc + ("/%s.png" % key)
+            path = loc + ("/%s.png" % fname)
             plt.imsave(fname=path, arr=data, cmap='coolwarm')
