@@ -101,7 +101,7 @@ class VectorFeaturesWrapper(gym.Wrapper):
         )
 
         obs["vector_obs"] = obs_vector
-        _ = obs.pop("blstats")
+        self.blstats = obs.pop("blstats")
 
         return obs
 

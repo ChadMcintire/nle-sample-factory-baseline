@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
+import seaborn as sns
 
 
 class GraphBuilder:
@@ -93,9 +94,11 @@ class GraphBuilder:
         data = self.graphs_data[graph_type]
         # unzip tuples
         x, y = [i[0] for i in data], [i[1] for i in data]
-        m = max(x)
-        n = max(y)
-        out_data = np.zeros([m, n])
+
+        #hard coded values are max length of the dungeon
+        #m = max(22)
+        #n = max(8)
+        out_data = np.zeros([79, 21])
 
         # count number of occurrences for each point
         counts = {}
@@ -112,13 +115,22 @@ class GraphBuilder:
         if transpose:
             out_data = np.transpose(out_data)
 
-        return out_data
+        #erase after debugging
+        print(np.max(out_data))
+        print(np.mean(out_data))
+        out_data[np.where(np.logical_and(np.less_equal(out_data, np.max(out_data)*.3), np.greater(out_data, 0)))] = np.max(out_data)*.3
+        print(np.mean(out_data))
 
-    def save_graphs(self, loc=""):
+        return out_data 
+
+    def save_graphs(self, loc="", DL_val=-1):
         e = datetime.datetime.now()
         time_prefix = "%s-%s-%s_%s_%s_%s" % (e.day, e.month, e.year, e.hour, e.minute, e.second)
         for key in self.graphs_data:
-            fname = time_prefix + key
+            fname = "DL " + str(DL_val) + "_" + time_prefix + "_" + key
             data = self._prep_data(key, transpose=True)
             path = loc + ("/%s.png" % fname)
+            sns.heatmap(data, cmap="magma")
+            plt.show()
+            
             plt.imsave(fname=path, arr=data, cmap='coolwarm')

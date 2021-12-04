@@ -2,7 +2,7 @@ import os
 import sys
 import time
 from collections import deque
-from utils import graphs
+from utils.graphs import GraphBuilder
 import numpy as np
 import torch
 
@@ -24,6 +24,9 @@ import env as my_envs
 # Benji's log file/class
 from log import ActionLog
 
+from collections import OrderedDict
+import time
+
 
 # TARGET_NUM_EPISODES = 512
 TARGET_NUM_EPISODES = 1
@@ -42,7 +45,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     def make_env_func(env_config):
         return create_env(cfg.env, cfg=cfg, env_config=env_config)
 
-    env = make_env_func(AttrDict({'worker_index': 0, 'vector_index': 0}))
+    #added the obsevation space to the end, the "tty cursor" object is just to render the image, and can be removed 
+    env = make_env_func([AttrDict({'worker_index': 0, 'vector_index': 0}), ["tty_chars", "tty_colors", "blstats", "message", "tty_cursor"]])
 
     # sample-factory defaults to work with multiagent environments,
     # but we can wrap a single-agent env into one of these like this
@@ -65,7 +69,16 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     num_frames = 0
     num_episodes = 0
 
-    origin_obs = env.reset()
+    obs = env.reset()
+    origin_obs = obs
+    print(env.env)
+    print(obs)
+    print(obs[0].keys())
+    print(obs[0]["obs"])
+    print(obs[0]["vector_obs"])
+    print(len(obs[0]["vector_obs"]))
+    print("\n\n\n\n")
+    print(env.env.blstats)
     rnn_states = torch.zeros([env.num_agents, get_hidden_size(cfg)], dtype=torch.float32, device=device)
     episode_reward = np.zeros(env.num_agents)
     finished_episode = [False] * env.num_agents
@@ -76,6 +89,12 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     # create graph directory and builder for heatmap
     g_type = "heat_pos"
     builder = GraphBuilder([g_type])
+
+
+    new_dict_comp = {n:0 for n in list(range(env.action_space.n))}
+    message_dict = OrderedDict()
+    max_depth = 1
+    turn_of_arrival_of_max_depth = 0
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -92,13 +111,38 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             action_log.record_action(actions.item())
 
             actions = actions.cpu().numpy()
+            
+            #get actions for graphic etc.
+            new_dict_comp[policy_outputs.actions.item()] += 1
 
             rnn_states = policy_outputs.rnn_states
 
             obs, rew, done, infos = env.step(actions)
 
+            message = "".join([chr(n) for n in obs[0]["message"] if chr(n) != "\x00"])
+            if message in message_dict.keys():
+                message_dict[message] += 1
+            else:
+                message_dict[message] = 1
+
+            if max_depth < env.env.blstats[24]:
+                max_depth = env.env.blstats[24] 
+                turn_of_arrival_of_max_depth = env.env.blstats[20] 
+
+                # generate heat maps and save to {WorkingDir}/graphs/{g_type}
+                loc = os.getcwd() + "/graphs/" 
+                if not os.path.exists(loc):
+                    os.makedirs(loc)
+                builder.save_graphs(loc, env.env.blstats[24])
+                #time.sleep(5)
+                #builder.set_data(g_type, [])
+                builder = GraphBuilder([g_type])
+
+                #sys.exit()
+
             # add positions to heatmap
-            x, y, *other = origin_obs["blstats"][:2]
+            x, y, *other = env.env.blstats
+
             builder.append_point(g_type, (x, y))
 
             # render the game
@@ -142,13 +186,20 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 log.info('Avg episode rewards: %s, true rewards: %s', avg_episode_rewards_str, avg_true_reward_str)
                 log.info('Avg episode reward: %.3f, avg true_reward: %.3f', np.mean([np.mean(episode_rewards[i]) for i in range(env.num_agents)]), np.mean([np.mean(true_rewards[i]) for i in range(env.num_agents)]))
 
-    env.close()
+    print(new_dict_comp)
+    for key, value in message_dict.items():
+        print(key, value)
+    print("max_depth", max_depth)
+    print("turn count", turn_of_arrival_of_max_depth)
 
     # generate heat maps and save to {WorkingDir}/graphs/{g_type}
-    loc = os.getcwd + "/graphs/"
+    loc = os.getcwd() + "/graphs/"
     if not os.path.exists(loc):
         os.makedirs(loc)
-    builder.save_graphs(loc)
+    builder.save_graphs(loc, max_depth)
+    builder.set_data(g_type, [])
+
+    env.close()
 
     return ExperimentStatus.SUCCESS, np.mean(episode_rewards)
 
