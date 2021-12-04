@@ -130,3 +130,5 @@ dmypy.json
 
 *train_dir/
 *wand*
+agentActions.csv
+.vscode/

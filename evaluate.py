@@ -71,7 +71,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     finished_episode = [False] * env.num_agents
 
     # create instance of log to keep track of agent actions
-    action_log = ActionLog()
+    action_log = ActionLog(env)
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -94,8 +94,6 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             obs, rew, done, infos = env.step(actions)
             
             # render the game
-            # if env.num_agents == 1:   # I don't know if this is needed
-            #     env.render()
             env.render()
 
             episode_reward += rew
