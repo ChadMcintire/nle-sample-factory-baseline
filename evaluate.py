@@ -29,7 +29,7 @@ import time
 
 
 # TARGET_NUM_EPISODES = 512
-TARGET_NUM_EPISODES = 5
+TARGET_NUM_EPISODES = 50
 
 def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     """
@@ -67,6 +67,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     episode_rewards = [deque([], maxlen=100) for _ in range(env.num_agents)]
     episode_max_depth = []
     episode_max_turn = []
+    episodic_action_attempts = []
     true_rewards = [deque([], maxlen=100) for _ in range(env.num_agents)]
     num_frames = 0
     num_episodes = 0
@@ -97,6 +98,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     message_dict = OrderedDict()
     max_depth = 0
     turn_of_arrival_of_max_depth = 0
+    attempted_actions = 0
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -120,8 +122,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             rnn_states = policy_outputs.rnn_states
 
             turn_of_arrival_of_max_depth = env.env.blstats[20] 
-            print("env val", env.env.blstats[24])
-            print("turn_val", env.env.blstats[20])
+            #print("env val", env.env.blstats[24])
+            #print("turn_val", env.env.blstats[20])
             if max_depth < env.env.blstats[24]:
                 #seems to be the right amount of time to wait for the parent process to catch up to the env for the
                 #blstats to be correct
@@ -164,11 +166,12 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             # render the game
             # if env.num_agents == 1:   # I don't know if this is needed
             #     env.render()
-            env.render()
+            #env.render()
 
             episode_reward += rew
             num_frames += 1
-            print(num_frames)
+            attempted_actions += 1 
+            #print(num_frames)
 
             for agent_i, done_flag in enumerate(done):
                 if done_flag:
@@ -192,9 +195,11 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                     print("\n\n\n", turn_of_arrival_of_max_depth)
                     episode_max_depth.append(max_depth)
                     episode_max_turn.append(turn_of_arrival_of_max_depth)
+                    episodic_action_attempts.append(attempted_actions)
 
                     max_depth = 0
                     turn_of_arrival_of_max_depth = 0
+                    attempted_actions = 0
                     num_episodes += 1
 
             if all(finished_episode):
@@ -228,6 +233,9 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     min_episodic_depth = np.min(episode_max_depth)
     max_episodic_turn = np.max(episode_max_turn)
     max_episodic_depth = np.max(episode_max_depth)
+    average_attempted_action = np.mean(episodic_action_attempts)
+    max_attempted_action = np.max(episodic_action_attempts)
+
 
     print("average turn", avg_max_turn)
     print("average depth",avg_max_depth)
@@ -235,6 +243,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     print("min episodic depth", min_episodic_depth )
     print("max episodic turn", max_episodic_turn)
     print("max episodic depth", max_episodic_depth )
+    print("average attempted actions", average_attempted_action)
+    print("max attempted actions", max_attempted_action)
 
     # generate heat maps and save to {WorkingDir}/graphs/{g_type}
     #loc = os.getcwd() + "/graphs/"
@@ -242,6 +252,12 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     #    os.makedirs(loc)
     #builder.save_graphs(loc, max_depth)
     #builder.set_data(g_type, [])
+
+    list_of_elem = [avg_max_turn, avg_max_depth, min_episodic_turn, min_episodic_depth, max_episodic_turn, max_episodic_depth, average_attempted_action, max_attempted_action]
+    from csv import writer
+    with open("Data_Collection/Episodic_Returns.csv", 'a+', newline='') as write_obj:
+        csv_writer = writer(write_obj)
+        csv_writer.writerow(list_of_elem)
 
     env.close()
 
