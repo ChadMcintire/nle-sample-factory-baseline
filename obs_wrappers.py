@@ -101,10 +101,11 @@ class VectorFeaturesWrapper(gym.Wrapper):
         )
 
         obs["vector_obs"] = obs_vector
-        _ = obs.pop("blstats")
+        self.blstats = obs.pop("blstats")
 
         return obs
 
+    #make a self.blstats to access where the obs.pop("blstats") currently is
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
         obs = self._create_vector_obs(obs)
