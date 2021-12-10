@@ -122,8 +122,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             rnn_states = policy_outputs.rnn_states
 
             turn_of_arrival_of_max_depth = env.env.blstats[20] 
-            #print("env val", env.env.blstats[24])
-            #print("turn_val", env.env.blstats[20])
+            print("env val", env.env.blstats[24])
+            print("turn_val", env.env.blstats[20])
             if max_depth < env.env.blstats[24]:
                 #seems to be the right amount of time to wait for the parent process to catch up to the env for the
                 #blstats to be correct
@@ -132,7 +132,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 print("env val2", env.env.blstats[24])
                 print("turn_val2", env.env.blstats[20])
                 #max_depth = env.env.blstats[24] 
-                #turn_of_arrival_of_max_depth = env.env.blstats[20] 
+                # turn_of_arrival_of_max_depth = env.env.blstats[20] 
                 print("max_depth", max_depth)
                 print("turns", turn_of_arrival_of_max_depth)
                 #time.sleep(10)
@@ -164,7 +164,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             #builder.append_point(g_type, (x, y))
 
             # render the game
-            #env.render()
+            # env.render()
 
             episode_reward += rew
             num_frames += 1

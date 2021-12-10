@@ -132,6 +132,7 @@ dmypy.json
 *wand*
 agentActions.csv
 .vscode/
+Data_Collection/
 
 # IDE
 *.idea/
