@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 import seaborn as sns
+import math
 
 
 class GraphBuilder:
@@ -14,6 +15,7 @@ class GraphBuilder:
 
     def __init__(self, graph_types):
         self.graphs_data = {}
+        self.obs = []
 
         for g in graph_types:
             self.graphs_data[g] = []
@@ -27,13 +29,17 @@ class GraphBuilder:
         """
         self.graphs_data[graph_type] = data
 
-    def append_point(self, graph_type, pt):
+    def append_point(self, graph_type, pt, obs, tty_chars):
         """
         Add the point to the specified graph's data
         Args:
             graph_type:     String, The graph the point should be added to
             pt:             Tuple (x,y) representing a point
+            obs:            box?, the observation space?
+            tty_chars:      array of arrays, characters used in the view of the map
         """
+        self.obs = obs
+        self.tty_chars = tty_chars
         # append point to empty list
         if len(self.graphs_data[graph_type]) == 0:
             self.graphs_data[graph_type].append(pt)
@@ -44,6 +50,79 @@ class GraphBuilder:
         all_pts = self._pos_between(end_pt=pt, start_pt=start)
         for i in all_pts:
             self.graphs_data[graph_type].append(i)
+
+    def convert_to_char(self):
+        rows, cols = (21, 79)
+        arr = [[0]*cols]*rows
+
+        for x in range(len(self.obs["glyphs"])):
+            for y in range(len(self.obs["glyphs"][x])):
+                arr[x][y] = chr(self.tty_chars[x][y])
+            #     print(arr[x][y], end='')
+            # print()
+        for x in range(len(self.obs["glyphs"])):
+            for y in range(len(self.obs["glyphs"][x])):
+                print(arr[x][y], end='')
+            print()
+        print("char array: ", arr)
+        print("unique char array: ", np.unique(arr))
+        print("unique array: ", np.unique(self.tty_chars))
+        return arr
+            
+    def find_position(self, start, end):
+        print("start pos: ", start, "end pos: ", end)
+        convertedArr = self.convert_to_char()
+        hallway = []
+        # diagonal down to the left
+        if start[0] >= end[0] and start[1] >= end[1]:
+            x, y = start[0], start[1]
+            x2, y2 = end[0], end[1]
+            
+            for x in range(x2, x, 1):
+                for y in range(y2, y, 1):
+                    # print("x: ", x, "y: ", y)
+                    if(convertedArr[y][x] == '#'):
+                        print("x: ", x, "y: ", y)
+                        hallway.append((x, y))
+
+        # diagonal up to the left
+        if start[0] >= end[0] and start[1] <= end[1]:
+            x, y = start[0], start[1]
+            x2, y2 = end[0], end[1]
+            
+            for x in range(x2, x, 1):
+                for y in range(y, y2, 1):
+                    # print("x: ", x, "y: ", y)
+                    if(convertedArr[y][x] == '#'):
+                        print("x: ", x, "y: ", y)
+                        hallway.append((x, y))
+        
+        # diagonal down to the right
+        if start[0] <= end[0] and start[1] >= end[1]:
+            x, y = start[0], start[1]
+            x2, y2 = end[0], end[1]
+            
+            for x in range(x, x2, 1):
+                for y in range(y2, y, 1):
+                    # print("x: ", x, "y: ", y)
+                    if(convertedArr[y][x] == '#'):
+                        print("x: ", x, "y: ", y)
+                        hallway.append((x, y))
+        
+        # diagonal up to the right
+        if start[0] <= end[0] and start[1] <= end[1]:
+            x, y = start[0], start[1]
+            x2, y2 = end[0], end[1]
+            
+            for x in range(x, x2, 1):
+                for y in range(y, y2, 1):
+                    # print("x: ", x, "y: ", y)
+                    if(convertedArr[y][x] == '#'):
+                        print("x: ", x, "y: ", y)
+                        hallway.append((x, y))
+        
+        print("hallway: ", hallway)
+        return hallway
 
     def _pos_between(self, end_pt, start_pt):
         """
@@ -62,24 +141,75 @@ class GraphBuilder:
         y_d = end_pt[1] - start_pt[1]  # distance from pos.y and last_pos.y
 
         diag = True if abs(x_d) == abs(y_d) else False  # if these points lie on a diagonal
-        if diag:
-            dist = abs(x_d)
+
+        # print("numerator: ", (end_pt[1] - start_pt[1]), "denominator: ", (end_pt[0] - start_pt[0]))
+
+        if end_pt[0] - start_pt[0] != 0 or end_pt[1] - start_pt[1] != 0:
+            slope = (end_pt[1] - start_pt[1]) / (end_pt[0] - start_pt[0])
+            print("slope: ", slope)
+            
+            if abs(slope) == 1:
+                dist = abs(x_d) if not diag and abs(x_d) > 0 else abs(y_d)
+
+                # pos and last_pos are the same
+                if dist == 0:
+                    return [end_pt]
+                # difference between each point on the line, last_pos --> pos
+                x_diff = int(x_d / dist) if not diag else 1 if x_d > 0 else -1
+                y_diff = int(y_d / dist) if not diag else 1 if y_d > 0 else -1
+
+                # find all positions on line
+                for i in range(1, dist):
+                    i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
+                    all_pos.append(i_pos)
+
+                # all_pos.append(end_pt)
+            else:
+                # hallway = self.find_position(start_pt, end_pt)
+                print("HERER!!!!!!!!!!!!!!!!!!!!")
+                all_pos = all_pos + [i for i in self.find_position(start_pt, end_pt)]
+                print(all_pos)
         else:
             dist = abs(x_d) if not diag and abs(x_d) > 0 else abs(y_d)
 
-        # pos and last_pos are the same
-        if dist == 0:
-            return [end_pt]
-        # difference between each point on the line, last_pos --> pos
-        x_diff = int(x_d / dist) if not diag else 1 if x_d > 0 else -1
-        y_diff = int(y_d / dist) if not diag else 1 if y_d > 0 else -1
+            # pos and last_pos are the same
+            if dist == 0:
+                return [end_pt]
+            # difference between each point on the line, last_pos --> pos
+            x_diff = int(x_d / dist) if not diag else 1 if x_d > 0 else -1
+            y_diff = int(y_d / dist) if not diag else 1 if y_d > 0 else -1
 
-        # find all positions on line
-        for i in range(1, dist):
-            i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
-            all_pos.append(i_pos)
+            # find all positions on line
+            for i in range(1, dist):
+                i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
+                all_pos.append(i_pos)
+
+            # all_pos.append(end_pt)
+
+        # diag = True if abs(x_d) == abs(y_d) else False  # if these points lie on a diagonal
+        # if diag:
+        #     dist = abs(x_d)
+        # else:
+        #     dist = abs(x_d) if not diag and abs(x_d) > 0 else abs(y_d)
+
+        # # pos and last_pos are the same
+        # if dist == 0:
+        #     return [end_pt]
+        # # difference between each point on the line, last_pos --> pos
+        # x_diff = int(x_d / dist) if not diag else 1 if x_d > 0 else -1
+        # y_diff = int(y_d / dist) if not diag else 1 if y_d > 0 else -1
+
+        # # find all positions on line
+        # for i in range(1, dist):
+        #     i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
+        #     all_pos.append(i_pos)
+
+        # all_pos.append(end_pt)
 
         all_pos.append(end_pt)
+
+        print("start: ", start_pt, "end: ", end_pt)
+        print(all_pos)
         return all_pos
 
     def _prep_data(self, graph_type, transpose=False):
@@ -132,5 +262,10 @@ class GraphBuilder:
             path = loc + ("/%s.png" % fname)
             sns.heatmap(data, cmap="magma")
             plt.show()
+            plt.savefig(fname=path)
+            plt.clf()
             
-            plt.imsave(fname=path, arr=data, cmap='coolwarm')
+            # plt.imsave(fname=path, arr=data, cmap='coolwarm')
+
+    def _track_line():
+        print("test")

@@ -29,7 +29,7 @@ import time
 
 
 # TARGET_NUM_EPISODES = 512
-TARGET_NUM_EPISODES = 50
+TARGET_NUM_EPISODES = 1
 
 def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     """
@@ -99,6 +99,9 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     max_depth = 0
     turn_of_arrival_of_max_depth = 0
     attempted_actions = 0
+    # used to prevent output of blank heatmap
+    noBlankCount = 0
+    loc = os.getcwd() + "/graphs/"
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -125,9 +128,11 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             #print("env val", env.env.blstats[24])
             #print("turn_val", env.env.blstats[20])
             if max_depth < env.env.blstats[24]:
+                # print("thing")
+                # noBlankCount = 1
                 #seems to be the right amount of time to wait for the parent process to catch up to the env for the
                 #blstats to be correct
-                time.sleep(5)
+                # time.sleep(5)
                 max_depth = env.env.blstats[24] 
                 print("env val2", env.env.blstats[24])
                 print("turn_val2", env.env.blstats[20])
@@ -137,15 +142,16 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 print("turns", turn_of_arrival_of_max_depth)
                 #time.sleep(10)
 
-                # generate heat maps and save to {WorkingDir}/graphs/{g_type}
-                #print("blstats", env.env.blstats)
-                #loc = os.getcwd() + "/graphs/" 
-                #if not os.path.exists(loc):
-                #    os.makedirs(loc)
-                #builder.save_graphs(loc, env.env.blstats[24])
-                ##time.sleep(5)
-                ##builder.set_data(g_type, [])
-                #builder = GraphBuilder([g_type])
+                # used to prevent output of blank heatmap
+                if noBlankCount > 0:
+                    # generate heat maps and save to {WorkingDir}/graphs/{g_type}
+                    # print("blstats", env.env.blstats)
+                    if not os.path.exists(loc):
+                        os.makedirs(loc)
+                    builder.save_graphs(loc, env.env.blstats[24])
+                    time.sleep(5)
+                    builder.set_data(g_type, [])
+                    builder = GraphBuilder([g_type])
 
                 #sys.exit()
 
@@ -159,14 +165,26 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
 
             # add positions to heatmap
-            #x, y, *other = env.env.blstats
+            x, y, *other = env.env.blstats
 
-            #builder.append_point(g_type, (x, y))
+            # print(obs[0])
+            # for x in range(len(obs[0]["glyphs"])):
+            #     for y in range(len(obs[0]["glyphs"][x])):
+            #         # print(chr(obs["chars"][x][y]))
+            #         #obs["chars"][x][y] = chr(obs["chars"][x][y])
+            #         # arr[x][y] = str(chr(obs["tty_chars"][x][y]))
+            #         print(str(chr(env.env.tty_chars[x][y])), end='')
+
+            builder.append_point(g_type, (x, y), obs[0], env.env.tty_chars)
 
             # render the game
             # if env.num_agents == 1:   # I don't know if this is needed
             #     env.render()
-            #env.render()
+            env.render()
+
+            # show graph each step
+            if(noBlankCount > 0):
+                builder.save_graphs(loc, env.env.blstats[24])
 
             episode_reward += rew
             num_frames += 1
@@ -219,6 +237,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
                 log.info('Avg episode rewards: %s, true rewards: %s', avg_episode_rewards_str, avg_true_reward_str)
                 log.info('Avg episode reward: %.3f, avg true_reward: %.3f', np.mean([np.mean(episode_rewards[i]) for i in range(env.num_agents)]), np.mean([np.mean(true_rewards[i]) for i in range(env.num_agents)]))
+            noBlankCount = 1
 
     #print(new_dict_comp)
     #for key, value in message_dict.items():
@@ -247,11 +266,11 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     print("max attempted actions", max_attempted_action)
 
     # generate heat maps and save to {WorkingDir}/graphs/{g_type}
-    #loc = os.getcwd() + "/graphs/"
-    #if not os.path.exists(loc):
-    #    os.makedirs(loc)
-    #builder.save_graphs(loc, max_depth)
-    #builder.set_data(g_type, [])
+    loc = os.getcwd() + "/graphs/"
+    if not os.path.exists(loc):
+       os.makedirs(loc)
+    builder.save_graphs(loc, max_depth)
+    builder.set_data(g_type, [])
 
     list_of_elem = [avg_max_turn, avg_max_depth, min_episodic_turn, min_episodic_depth, max_episodic_turn, max_episodic_depth, average_attempted_action, max_attempted_action]
     from csv import writer
