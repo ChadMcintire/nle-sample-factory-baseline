@@ -130,6 +130,9 @@ dmypy.json
 
 *train_dir/
 *wand*
+agentActions.csv
+.vscode/
+Data_Collection/
 
 # IDE
 *.idea/

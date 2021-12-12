@@ -87,7 +87,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     finished_episode = [False] * env.num_agents
 
     # create instance of log to keep track of agent actions
-    action_log = ActionLog()
+    action_log = ActionLog(env)
 
     # create graph directory and builder for heatmap
     g_type = "heat_pos"
