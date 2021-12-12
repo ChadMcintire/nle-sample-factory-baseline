@@ -29,6 +29,9 @@ class GraphBuilder:
             data:           Array of Tuples, Expects an array of tuples for graph_type of 'heat_pos' and 'heat_search'
         """
         self.graphs_data[graph_type] = data
+    
+    def remove_last_point(self, graph_type):
+        self.graphs_data[graph_type].pop()
 
     def append_point(self, graph_type, pt, obs, tty_chars):
         """
@@ -109,10 +112,7 @@ class GraphBuilder:
             
             for j in range(y2, y + 1, 1):
                 for i in range(x, x2 + 2, 1):
-                    # print("j: ", j, "i: ", i + 1)
-                    # print(convertedArr[i + 1][j])
                     if(convertedArr[i][j] == '#'):
-                        # print("x: ", x, "y: ", y)
                         hallway.append((j, i))
         
         if start[0] <= end[0] and start[1] >= end[1]:
@@ -121,10 +121,7 @@ class GraphBuilder:
             
             for j in range(y, y2 + 1, 1):
                 for i in range(x2, x + 2, 1):
-                    # print("j: ", j, "i: ", i + 1)
-                    # print(convertedArr[i][j])
                     if(convertedArr[i][j] == '#'):
-                        # print("x: ", x, "y: ", y)
                         hallway.append((j, i))
         
         if start[0] <= end[0] and start[1] <= end[1]:
@@ -133,8 +130,6 @@ class GraphBuilder:
             
             for j in range(y, y2 + 1, 1):
                 for i in range(x, x2 + 2, 1):
-                    # print("j: ", j, "i: ", i + 1)
-                    # print(convertedArr[i + 1][j])
                     if(convertedArr[i][j] == '#'):
                         hallway.append((j, i))
         
@@ -234,7 +229,7 @@ class GraphBuilder:
 
         return out_data 
 
-    def save_graphs(self, loc="", DL_val=-1):
+    def save_graphs(self, loc="", DL_val=-1, max_depth=0, turn_of_arrival_of_max_depth=0):
         e = datetime.datetime.now()
         time_prefix = "%s-%s-%s_%s_%s_%s" % (e.day, e.month, e.year, e.hour, e.minute, e.second)
         for key in self.graphs_data:
@@ -242,6 +237,7 @@ class GraphBuilder:
             data = self._prep_data(key, transpose=True)
             path = loc + ("/%s.png" % fname)
             sns.heatmap(data, cmap="magma")
+            plt.title("Dungeon Level: " + str(max_depth) + "\nNumber of Turns: " + str(turn_of_arrival_of_max_depth))
             plt.savefig(fname=path)
             plt.show()
             plt.clf()
