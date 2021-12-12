@@ -174,7 +174,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             #         #obs["chars"][x][y] = chr(obs["chars"][x][y])
             #         # arr[x][y] = str(chr(obs["tty_chars"][x][y]))
             #         print(str(chr(env.env.tty_chars[x][y])), end='')
-
+            
             builder.append_point(g_type, (x, y), obs[0], env.env.tty_chars)
 
             # render the game

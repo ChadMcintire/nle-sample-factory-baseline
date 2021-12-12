@@ -1,3 +1,4 @@
+from os import ttyname
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
@@ -53,75 +54,90 @@ class GraphBuilder:
 
     def convert_to_char(self):
         rows, cols = (21, 79)
-        arr = [[0]*cols]*rows
+        arr = []
 
+        # for some reason we weren't able to convert to a char array 
+        # so we appended to a list and shaped the list to the correct size.
         for x in range(len(self.obs["glyphs"])):
             for y in range(len(self.obs["glyphs"][x])):
-                arr[x][y] = chr(self.tty_chars[x][y])
-            #     print(arr[x][y], end='')
-            # print()
-        for x in range(len(self.obs["glyphs"])):
-            for y in range(len(self.obs["glyphs"][x])):
-                print(arr[x][y], end='')
-            print()
-        print("char array: ", arr)
-        print("unique char array: ", np.unique(arr))
-        print("unique array: ", np.unique(self.tty_chars))
+                arr.append([chr(self.tty_chars[x][y])])
+                
+        arr = np.resize(arr, (rows, cols))
+
+        # this is to print all the paths (#) that are visible to the agent
+        # for x in range(len(self.obs["glyphs"])):
+        #     for y in range(len(self.obs["glyphs"][x])):
+        #         if(arr2[x][y] == '#'):
+        #             print("y: ", y, "x: ", x)
+        #             print(arr2[x][y])
+
         return arr
             
     def find_position(self, start, end):
-        print("start pos: ", start, "end pos: ", end)
         convertedArr = self.convert_to_char()
         hallway = []
-        # diagonal down to the left
-        if start[0] >= end[0] and start[1] >= end[1]:
-            x, y = start[0], start[1]
-            x2, y2 = end[0], end[1]
-            
-            for x in range(x2, x, 1):
-                for y in range(y2, y, 1):
-                    # print("x: ", x, "y: ", y)
-                    if(convertedArr[y][x] == '#'):
-                        print("x: ", x, "y: ", y)
-                        hallway.append((x, y))
 
-        # diagonal up to the left
+        if start[0] >= end[0] and start[1] >= end[1]:
+            y, x = start[0], start[1]
+            y2, x2 = end[0], end[1]
+            
+            # print("x: ", x, "y: ", y)
+            # print(convertedArr[x][y])
+            # print("x - 1: ", (x - 1), "y: ", y)
+            # print(convertedArr[(x - 1)][y])
+            # print("x + 1: ", (x + 1), "y: ", y)
+            # print(convertedArr[(x + 1)][y])
+
+            # print("x2: ", x2, "y2: ", y2)
+            # print(convertedArr[x2][y2])
+            # print("x2 - 1: ", (x2 - 1), "y2: ", y2)
+            # print(convertedArr[(x2 - 1)][y2])
+            # print("x2 + 1: ", (x2 + 1), "y2: ", y2)
+            # print(convertedArr[(x2 + 1)][y2])
+            
+            for j in range(y2, y + 1, 1):
+                for i in range(x2, x + 2, 1):
+                    # print("j: ", j, "i: ", i + 1)
+                    # print(convertedArr[i + 1][j])
+                    if(convertedArr[i][j] == '#'):
+                        # print("x: ", x, "y: ", y)
+                        hallway.append((j, i))
+
         if start[0] >= end[0] and start[1] <= end[1]:
-            x, y = start[0], start[1]
-            x2, y2 = end[0], end[1]
+            y, x = start[0], start[1]
+            y2, x2 = end[0], end[1]
             
-            for x in range(x2, x, 1):
-                for y in range(y, y2, 1):
-                    # print("x: ", x, "y: ", y)
-                    if(convertedArr[y][x] == '#'):
-                        print("x: ", x, "y: ", y)
-                        hallway.append((x, y))
+            for j in range(y2, y + 1, 1):
+                for i in range(x, x2 + 2, 1):
+                    # print("j: ", j, "i: ", i + 1)
+                    # print(convertedArr[i + 1][j])
+                    if(convertedArr[i][j] == '#'):
+                        # print("x: ", x, "y: ", y)
+                        hallway.append((j, i))
         
-        # diagonal down to the right
         if start[0] <= end[0] and start[1] >= end[1]:
-            x, y = start[0], start[1]
-            x2, y2 = end[0], end[1]
+            y, x = start[0], start[1]
+            y2, x2 = end[0], end[1]
             
-            for x in range(x, x2, 1):
-                for y in range(y2, y, 1):
-                    # print("x: ", x, "y: ", y)
-                    if(convertedArr[y][x] == '#'):
-                        print("x: ", x, "y: ", y)
-                        hallway.append((x, y))
+            for j in range(y, y2 + 1, 1):
+                for i in range(x2, x + 2, 1):
+                    # print("j: ", j, "i: ", i + 1)
+                    # print(convertedArr[i][j])
+                    if(convertedArr[i][j] == '#'):
+                        # print("x: ", x, "y: ", y)
+                        hallway.append((j, i))
         
-        # diagonal up to the right
         if start[0] <= end[0] and start[1] <= end[1]:
-            x, y = start[0], start[1]
-            x2, y2 = end[0], end[1]
+            y, x = start[0], start[1]
+            y2, x2 = end[0], end[1]
             
-            for x in range(x, x2, 1):
-                for y in range(y, y2, 1):
-                    # print("x: ", x, "y: ", y)
-                    if(convertedArr[y][x] == '#'):
-                        print("x: ", x, "y: ", y)
-                        hallway.append((x, y))
+            for j in range(y, y2 + 1, 1):
+                for i in range(x, x2 + 2, 1):
+                    # print("j: ", j, "i: ", i + 1)
+                    # print(convertedArr[i + 1][j])
+                    if(convertedArr[i][j] == '#'):
+                        hallway.append((j, i))
         
-        print("hallway: ", hallway)
         return hallway
 
     def _pos_between(self, end_pt, start_pt):
@@ -142,11 +158,8 @@ class GraphBuilder:
 
         diag = True if abs(x_d) == abs(y_d) else False  # if these points lie on a diagonal
 
-        # print("numerator: ", (end_pt[1] - start_pt[1]), "denominator: ", (end_pt[0] - start_pt[0]))
-
-        if end_pt[0] - start_pt[0] != 0 or end_pt[1] - start_pt[1] != 0:
+        if not (end_pt[0] - start_pt[0] == 0 or end_pt[1] - start_pt[1] == 0):
             slope = (end_pt[1] - start_pt[1]) / (end_pt[0] - start_pt[0])
-            print("slope: ", slope)
             
             if abs(slope) == 1:
                 dist = abs(x_d) if not diag and abs(x_d) > 0 else abs(y_d)
@@ -162,13 +175,8 @@ class GraphBuilder:
                 for i in range(1, dist):
                     i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
                     all_pos.append(i_pos)
-
-                # all_pos.append(end_pt)
             else:
-                # hallway = self.find_position(start_pt, end_pt)
-                print("HERER!!!!!!!!!!!!!!!!!!!!")
                 all_pos = all_pos + [i for i in self.find_position(start_pt, end_pt)]
-                print(all_pos)
         else:
             dist = abs(x_d) if not diag and abs(x_d) > 0 else abs(y_d)
 
@@ -184,32 +192,8 @@ class GraphBuilder:
                 i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
                 all_pos.append(i_pos)
 
-            # all_pos.append(end_pt)
-
-        # diag = True if abs(x_d) == abs(y_d) else False  # if these points lie on a diagonal
-        # if diag:
-        #     dist = abs(x_d)
-        # else:
-        #     dist = abs(x_d) if not diag and abs(x_d) > 0 else abs(y_d)
-
-        # # pos and last_pos are the same
-        # if dist == 0:
-        #     return [end_pt]
-        # # difference between each point on the line, last_pos --> pos
-        # x_diff = int(x_d / dist) if not diag else 1 if x_d > 0 else -1
-        # y_diff = int(y_d / dist) if not diag else 1 if y_d > 0 else -1
-
-        # # find all positions on line
-        # for i in range(1, dist):
-        #     i_pos = (start_pt[0] + x_diff * i, start_pt[1] + y_diff * i)
-        #     all_pos.append(i_pos)
-
-        # all_pos.append(end_pt)
-
         all_pos.append(end_pt)
 
-        print("start: ", start_pt, "end: ", end_pt)
-        print(all_pos)
         return all_pos
 
     def _prep_data(self, graph_type, transpose=False):
@@ -245,11 +229,8 @@ class GraphBuilder:
         if transpose:
             out_data = np.transpose(out_data)
 
-        #erase after debugging
-        print(np.max(out_data))
-        print(np.mean(out_data))
+        # if any value is greater than 0 and less than 1/3 then you assign the value to be 1/3 of the max value
         out_data[np.where(np.logical_and(np.less_equal(out_data, np.max(out_data)*.3), np.greater(out_data, 0)))] = np.max(out_data)*.3
-        print(np.mean(out_data))
 
         return out_data 
 
@@ -261,8 +242,8 @@ class GraphBuilder:
             data = self._prep_data(key, transpose=True)
             path = loc + ("/%s.png" % fname)
             sns.heatmap(data, cmap="magma")
-            plt.show()
             plt.savefig(fname=path)
+            plt.show()
             plt.clf()
             
             # plt.imsave(fname=path, arr=data, cmap='coolwarm')
