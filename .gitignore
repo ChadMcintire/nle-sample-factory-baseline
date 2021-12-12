@@ -130,3 +130,9 @@ dmypy.json
 
 *train_dir/
 *wand*
+
+# IDE
+*.idea/
+
+# NLE
+nle/
