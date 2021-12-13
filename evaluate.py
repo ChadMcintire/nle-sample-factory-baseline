@@ -151,7 +151,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
                 # Append steps to the intial position to accentuate the starting position on the heatmap
                 x, y, *other = env.env.blstats
-                print("x: ", x, "y: ", y)
+                # print("x: ", x, "y: ", y)
                 for i in range(20):
                     builder.append_point(g_type, (x, y), obs[0], env.env.tty_chars)
 
@@ -160,6 +160,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
             obs, rew, done, infos = env.step(actions)
 
+            # this collects the messages for each episode.
             message = "".join([chr(n) for n in obs[0]["message"] if chr(n) != "\x00"])
             if message in message_dict.keys():
                 message_dict[message] += 1
@@ -228,6 +229,9 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 log.info('Avg episode rewards: %s, true rewards: %s', avg_episode_rewards_str, avg_true_reward_str)
                 log.info('Avg episode reward: %.3f, avg true_reward: %.3f', np.mean([np.mean(episode_rewards[i]) for i in range(env.num_agents)]), np.mean([np.mean(true_rewards[i]) for i in range(env.num_agents)]))
             noBlankCount = 1
+
+    for key, value in message_dict.items():
+       print(key, value)
 
     print("max_depth", max_depth)
     print("turn count", turn_of_arrival_of_max_depth)
