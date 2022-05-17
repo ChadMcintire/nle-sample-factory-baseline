@@ -1,0 +1,2 @@
+grep 'mycmd' /var/log/syslog
+ps aux |grep "run.sh"

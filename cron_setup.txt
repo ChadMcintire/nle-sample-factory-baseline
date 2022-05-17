@@ -1,0 +1,15 @@
+
+#https://askubuntu.com/questions/222512/cron-info-no-mta-installed-discarding-output-error-in-the-syslog
+#michael hunter answer gives the best solution
+
+#tells to use the logger 
+#then grep with this grep 'mycmd' /var/log/syslog
+
+#this didn't work but was interesting
+https://www.reddit.com/r/learnpython/comments/abxu08/run_python_script_from_crontab_using_virtual_env/
+
+#cronjobs basics 
+https://phoenixnap.com/kb/set-up-cron-job-linux
+
+#the best way I saw to add a virtual env to a bash script
+https://bktapan.medium.com/how-to-schedule-a-python-script-crontab-with-virtualenv-96bd6fcaa56a
