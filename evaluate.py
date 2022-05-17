@@ -129,12 +129,12 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 #blstats to be correct
                 time.sleep(5)
                 max_depth = env.env.blstats[24] 
-                print("env val2", env.env.blstats[24])
-                print("turn_val2", env.env.blstats[20])
+                #print("env val2", env.env.blstats[24])
+                #print("turn_val2", env.env.blstats[20])
                 #max_depth = env.env.blstats[24] 
                 #turn_of_arrival_of_max_depth = env.env.blstats[20] 
-                print("max_depth", max_depth)
-                print("turns", turn_of_arrival_of_max_depth)
+                #print("max_depth", max_depth)
+                #print("turns", turn_of_arrival_of_max_depth)
                 #time.sleep(10)
 
                 # generate heat maps and save to {WorkingDir}/graphs/{g_type}
@@ -191,8 +191,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                     episode_reward[agent_i] = 0
 
                     #need to make this multi-agent later
-                    print("\n\n\n", max_depth)
-                    print("\n\n\n", turn_of_arrival_of_max_depth)
+                    #print("\n\n\n", max_depth)
+                    #print("\n\n\n", turn_of_arrival_of_max_depth)
                     episode_max_depth.append(max_depth)
                     episode_max_turn.append(turn_of_arrival_of_max_depth)
                     episodic_action_attempts.append(attempted_actions)
@@ -201,6 +201,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                     turn_of_arrival_of_max_depth = 0
                     attempted_actions = 0
                     num_episodes += 1
+                    print("number of episodes", num_episodes)
 
             if all(finished_episode):
                 finished_episode = [False] * env.num_agents
@@ -223,10 +224,10 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     #print(new_dict_comp)
     #for key, value in message_dict.items():
     #    print(key, value)
-    print("max_depth", max_depth)
-    print("turn count", turn_of_arrival_of_max_depth)
-    print("episode turn", episode_max_turn)
-    print("episode depth", episode_max_depth)
+    #print("max_depth", max_depth)
+    #print("turn count", turn_of_arrival_of_max_depth)
+    #print("episode turn", episode_max_turn)
+    #print("episode depth", episode_max_depth)
     avg_max_turn = np.mean(episode_max_turn)
     avg_max_depth = np.mean(episode_max_depth)
     min_episodic_turn = np.min(episode_max_turn)
@@ -259,10 +260,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
         csv_writer = writer(write_obj)
         csv_writer.writerow(list_of_elem)
 
-    env.close()
-
-    return ExperimentStatus.SUCCESS, np.mean(episode_rewards)
-
+    env.close() 
+    return ExperimentStatus.SUCCESS, np.mean(episode_rewards) 
 
 def parse_all_args(argv=None, evaluation=True):
     parser = arg_parser(argv, evaluation=evaluation)
