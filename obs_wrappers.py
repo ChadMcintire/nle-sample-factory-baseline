@@ -256,7 +256,8 @@ class RenderCharImagesWithNumpyWrapper(gym.Wrapper):
             offset_w=offset_w
         )
 
-        _ = obs.pop("tty_chars")
+        # _ = obs.pop("tty_chars")
+        self.tty_chars = obs.pop("tty_chars")
         _ = obs.pop("tty_colors")
         obs["obs"] = out_image
         return obs

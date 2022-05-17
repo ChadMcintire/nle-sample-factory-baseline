@@ -129,10 +129,13 @@ dmypy.json
 .pyre/
 
 *train_dir/
+*wand*
+agentActions.csv
+.vscode/
+Data_Collection/
 
 # IDE
 *.idea/
 
 # NLE
 nle/
-*wand*

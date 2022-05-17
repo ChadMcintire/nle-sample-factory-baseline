@@ -40,7 +40,7 @@ def make_custom_env_func(full_env_name, cfg=None, env_config=None):
     observation_keys = ["tty_chars", "tty_colors", "blstats", "message"]
     if env_config:
         if not "env_id" in env_config.keys():
-            observation_keys = ["tty_chars", "tty_colors", "blstats", "message", "tty_cursor"]
+            observation_keys = ["tty_chars", "tty_colors", "blstats", "message", "tty_cursor", "glyphs"]
 
     env = RootNLEWrapper(gym.make("NetHackChallenge-v0", observation_keys=observation_keys))
     if full_env_name == "nle_competition_image_obs":

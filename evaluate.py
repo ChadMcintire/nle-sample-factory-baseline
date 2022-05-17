@@ -29,7 +29,7 @@ import time
 
 
 # TARGET_NUM_EPISODES = 512
-TARGET_NUM_EPISODES = 50
+TARGET_NUM_EPISODES = 1
 
 def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     """
@@ -87,7 +87,7 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     finished_episode = [False] * env.num_agents
 
     # create instance of log to keep track of agent actions
-    action_log = ActionLog()
+    action_log = ActionLog(env)
 
     # create graph directory and builder for heatmap
     g_type = "heat_pos"
@@ -99,6 +99,12 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     max_depth = 0
     turn_of_arrival_of_max_depth = 0
     attempted_actions = 0
+    # used to prevent output of blank heatmap
+    noBlankCount = 0
+    loc = os.getcwd() + "/graphs/"
+    current_positions = []
+    last_num_turns = 0
+    last_max_depth = 0
 
     with torch.no_grad():
         while num_frames < max_num_frames and num_episodes < target_num_episodes:
@@ -122,12 +128,8 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
             rnn_states = policy_outputs.rnn_states
 
             turn_of_arrival_of_max_depth = env.env.blstats[20] 
-            #print("env val", env.env.blstats[24])
-            #print("turn_val", env.env.blstats[20])
+            
             if max_depth < env.env.blstats[24]:
-                #seems to be the right amount of time to wait for the parent process to catch up to the env for the
-                #blstats to be correct
-                time.sleep(5)
                 max_depth = env.env.blstats[24] 
                 #print("env val2", env.env.blstats[24])
                 #print("turn_val2", env.env.blstats[20])
@@ -148,9 +150,36 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
                 #builder = GraphBuilder([g_type])
 
                 #sys.exit()
+                
+                # used to prevent output of blank heatmap
+                if noBlankCount > 0:
+                    # remove the point for the next level
+                    builder.remove_last_point(g_type)
+
+                    # append steps to the last position to accentuate the end position of the level
+                    for i in range(20):
+                        builder.append_point(g_type, current_positions[-2], obs[0], env.env.tty_chars)
+                    
+                    # generate heat maps and save to {WorkingDir}/graphs/{g_type}
+                    if not os.path.exists(loc):
+                        os.makedirs(loc)
+                    builder.save_graphs(loc, env.env.blstats[24], last_max_depth, last_num_turns)
+                    time.sleep(5)
+                    # builder.set_data(g_type, [])
+                    builder = GraphBuilder([g_type])
+
+                # Append steps to the intial position to accentuate the starting position on the heatmap
+                x, y, *other = env.env.blstats
+                # print("x: ", x, "y: ", y)
+                for i in range(20):
+                    builder.append_point(g_type, (x, y), obs[0], env.env.tty_chars)
+
+            last_max_depth = max_depth
+            last_num_turns = turn_of_arrival_of_max_depth
 
             obs, rew, done, infos = env.step(actions)
 
+            # this collects the messages for each episode.
             message = "".join([chr(n) for n in obs[0]["message"] if chr(n) != "\x00"])
             if message in message_dict.keys():
                 message_dict[message] += 1
@@ -159,27 +188,28 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
 
             # add positions to heatmap
-            #x, y, *other = env.env.blstats
+            x, y, *other = env.env.blstats
 
-            #builder.append_point(g_type, (x, y))
+            current_positions.append((x, y))
+            
+            builder.append_point(g_type, (x, y), obs[0], env.env.tty_chars)
 
             # render the game
-            # if env.num_agents == 1:   # I don't know if this is needed
-            #     env.render()
-            #env.render()
+            env.render()
+
+            # show graph each step
+            # if(noBlankCount > 0):
+                # builder.save_graphs(loc, env.env.blstats[24], last_max_depth, last_num_turns)
 
             episode_reward += rew
             num_frames += 1
             attempted_actions += 1 
-            #print(num_frames)
 
             for agent_i, done_flag in enumerate(done):
                 if done_flag:
-                    #print("env done", env.env.blstats[24])
-                    #print("turn_done", env.env.blstats[20])
-                    #time.sleep(3)
                     # print actions after episode
                     action_log.print_actions()
+
                     # clear actions for next episode
                     action_log.clear_actions()
                     
@@ -220,14 +250,14 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
 
                 log.info('Avg episode rewards: %s, true rewards: %s', avg_episode_rewards_str, avg_true_reward_str)
                 log.info('Avg episode reward: %.3f, avg true_reward: %.3f', np.mean([np.mean(episode_rewards[i]) for i in range(env.num_agents)]), np.mean([np.mean(true_rewards[i]) for i in range(env.num_agents)]))
+            noBlankCount = 1
+
+    for key, value in message_dict.items():
+       print(key, value)
 
     #print(new_dict_comp)
     #for key, value in message_dict.items():
     #    print(key, value)
-    #print("max_depth", max_depth)
-    #print("turn count", turn_of_arrival_of_max_depth)
-    #print("episode turn", episode_max_turn)
-    #print("episode depth", episode_max_depth)
     avg_max_turn = np.mean(episode_max_turn)
     avg_max_depth = np.mean(episode_max_depth)
     min_episodic_turn = np.min(episode_max_turn)
@@ -247,12 +277,19 @@ def enjoy(cfg, max_num_frames=1e9, target_num_episodes=TARGET_NUM_EPISODES):
     print("average attempted actions", average_attempted_action)
     print("max attempted actions", max_attempted_action)
 
+    # remove the point for the next level
+    builder.remove_last_point(g_type)
+
+    # append steps to the last position to accentuate the end position of the level
+    for i in range(20):
+        builder.append_point(g_type, current_positions[-2], obs[0], env.env.tty_chars)
+
     # generate heat maps and save to {WorkingDir}/graphs/{g_type}
-    #loc = os.getcwd() + "/graphs/"
-    #if not os.path.exists(loc):
-    #    os.makedirs(loc)
-    #builder.save_graphs(loc, max_depth)
-    #builder.set_data(g_type, [])
+    loc = os.getcwd() + "/graphs/"
+    if not os.path.exists(loc):
+       os.makedirs(loc)
+    builder.save_graphs(loc, max_depth, last_max_depth, last_num_turns)
+    builder.set_data(g_type, [])
 
     list_of_elem = [avg_max_turn, avg_max_depth, min_episodic_turn, min_episodic_depth, max_episodic_turn, max_episodic_depth, average_attempted_action, max_attempted_action]
     from csv import writer
@@ -272,7 +309,6 @@ def parse_all_args(argv=None, evaluation=True):
 def main():
     """Evaluation entry point."""
     cfg = parse_all_args()
-    #print("\n\n\ncfg",cfg, "\n\n\n")
     _ = enjoy(cfg)
     return
 
